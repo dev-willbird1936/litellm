@@ -355,10 +355,6 @@ async def test_realtime_health_check_uses_model_level_vertex_params():
     ],
 )
 async def test_realtime_health_check_uses_bearer_auth_header(provider, api_base):
-    """Regression test: openai/xai realtime health checks must authenticate with
-    Authorization: Bearer <key>, matching the real request path in
-    OpenAIRealtime/XAIRealtime.async_realtime, instead of Azure's api-key header.
-    A health check using the wrong header can mark a healthy deployment unhealthy."""
     from litellm.realtime_api import main as realtime_main
 
     test_api_key = "sk-test-1234567890abcdef"
@@ -381,9 +377,6 @@ async def test_realtime_health_check_uses_bearer_auth_header(provider, api_base)
 
 @pytest.mark.asyncio
 async def test_realtime_health_check_azure_uses_api_key_header():
-    """Azure realtime health checks must keep using the api-key header, matching
-    AzureOpenAIRealtime.async_realtime. Guards against the openai/xai bearer-token
-    fix regressing azure's header format."""
     from litellm.realtime_api import main as realtime_main
 
     test_api_key = "azure-test-key-1234567890abcdef"
