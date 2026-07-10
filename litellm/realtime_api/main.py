@@ -536,6 +536,7 @@ async def _realtime_health_check(
     import websockets
 
     url: Optional[str] = None
+    headers: dict = {}
     if custom_llm_provider == "azure":
         url = azure_realtime._construct_url(
             api_base=api_base or "",
@@ -543,13 +544,16 @@ async def _realtime_health_check(
             api_version=api_version or "2024-10-01-preview",
             realtime_protocol=realtime_protocol,
         )
+        headers = {"api-key": api_key or ""}
     elif custom_llm_provider == "openai":
         url = openai_realtime._construct_url(
             api_base=api_base or "https://api.openai.com/",
             query_params={"model": model},
         )
+        headers = openai_realtime._get_additional_headers(api_key or "")
     elif custom_llm_provider == "xai":
         url = xai_realtime._construct_url(api_base=api_base or "https://api.x.ai/v1", query_params={"model": model})
+        headers = xai_realtime._get_additional_headers(api_key or "")
     elif custom_llm_provider == "vertex_ai":
         vertex_model_params = model_params or {}
         resolved_location = vertex_llm_base.get_vertex_region(
@@ -584,9 +588,7 @@ async def _realtime_health_check(
     ssl_context = get_shared_realtime_ssl_context()
     async with websockets.connect(  # type: ignore
         url,
-        additional_headers={
-            "api-key": api_key,  # type: ignore
-        },
+        additional_headers=headers,
         max_size=REALTIME_WEBSOCKET_MAX_MESSAGE_SIZE_BYTES,
         ssl=ssl_context,
     ):

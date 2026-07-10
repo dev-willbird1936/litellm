@@ -344,3 +344,62 @@ async def test_realtime_health_check_uses_model_level_vertex_params():
         "Authorization": "Bearer model-level-token",
         "x-goog-user-project": "model-level-project",
     }
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "provider,api_base",
+    [
+        ("openai", "https://api.openai.com/"),
+        ("xai", "https://api.x.ai/v1"),
+    ],
+)
+async def test_realtime_health_check_uses_bearer_auth_header(provider, api_base):
+    """Regression test: openai/xai realtime health checks must authenticate with
+    Authorization: Bearer <key>, matching the real request path in
+    OpenAIRealtime/XAIRealtime.async_realtime, instead of Azure's api-key header.
+    A health check using the wrong header can mark a healthy deployment unhealthy."""
+    from litellm.realtime_api import main as realtime_main
+
+    test_api_key = "sk-test-1234567890abcdef"
+    connect_calls = []
+
+    with patch(
+        "websockets.connect",
+        lambda url, **kwargs: _FakeWebsocketConnect(connect_calls, url, **kwargs),
+    ):
+        result = await realtime_main._realtime_health_check(
+            model="test-model",
+            custom_llm_provider=provider,
+            api_key=test_api_key,
+            api_base=api_base,
+        )
+
+    assert result is True
+    assert connect_calls[0]["additional_headers"] == {"Authorization": f"Bearer {test_api_key}"}
+
+
+@pytest.mark.asyncio
+async def test_realtime_health_check_azure_uses_api_key_header():
+    """Azure realtime health checks must keep using the api-key header, matching
+    AzureOpenAIRealtime.async_realtime. Guards against the openai/xai bearer-token
+    fix regressing azure's header format."""
+    from litellm.realtime_api import main as realtime_main
+
+    test_api_key = "azure-test-key-1234567890abcdef"
+    connect_calls = []
+
+    with patch(
+        "websockets.connect",
+        lambda url, **kwargs: _FakeWebsocketConnect(connect_calls, url, **kwargs),
+    ):
+        result = await realtime_main._realtime_health_check(
+            model="test-model",
+            custom_llm_provider="azure",
+            api_key=test_api_key,
+            api_base="https://test.openai.azure.com/",
+            api_version="2024-10-01-preview",
+        )
+
+    assert result is True
+    assert connect_calls[0]["additional_headers"] == {"api-key": test_api_key}
