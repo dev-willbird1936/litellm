@@ -342,7 +342,7 @@ class HttpPassThroughEndpointHelpers(BasePassthroughUtils):
         elif (
             parsed_url.hostname == "api.openai.com"
             or parsed_url.hostname == "openai.azure.com"
-            or (parsed_url.hostname and "openai.com" in parsed_url.hostname)
+            or (parsed_url.hostname and parsed_url.hostname.endswith(".openai.azure.com"))
         ):
             return EndpointType.OPENAI
         return EndpointType.GENERIC
