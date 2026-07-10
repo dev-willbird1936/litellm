@@ -3410,15 +3410,6 @@ def test_db_registered_pass_through_route_bare_path_convention(
 def test_get_endpoint_type_boundary_aware_openai_azure_match(
     url, expected_endpoint_type
 ):
-    """
-    Regression: get_endpoint_type() used an unconstrained "openai.com" in hostname
-    substring check, which misclassified lookalike hosts (e.g. evil-openai.com,
-    openai.com.attacker.example) as OPENAI, and compared Azure hosts against the
-    bare string "openai.azure.com" via exact equality, which misclassified real
-    Azure OpenAI resource subdomains (e.g. resource.openai.azure.com) as GENERIC.
-    Hostname matching must be boundary-aware: exact match or a ".openai.azure.com"
-    suffix.
-    """
     assert (
         HttpPassThroughEndpointHelpers.get_endpoint_type(url)
         == expected_endpoint_type
